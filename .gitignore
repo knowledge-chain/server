@@ -2,6 +2,8 @@ node_modules/
 npm-debug.log
 .DS_Store
 .env
+.evm.example
+
 
 # /dist
 private_key
