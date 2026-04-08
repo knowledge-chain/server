@@ -43,7 +43,8 @@ const allowedOrigins = [
   "http://localhost:3000", 
   "http://localhost:3001", 
   "http://localhost:3002",
-  "https://www.theknowledgechain.com"
+  "https://www.theknowledgechain.com",
+  "https://admin-dashboard-lilac-eta-75.vercel.app"
 ];
 
 app.use(
