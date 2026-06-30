@@ -1,10 +1,14 @@
 import { Schema, model } from "mongoose";
-import { IAmount } from "../interface/amount.interface"
+import { IAmount, TierTypeAmount } from "../interface/amount.interface"
 
-const AmountSchema = new Schema(
+const AmountSchema: Schema<IAmount> = new Schema(
     { 
       amount: {
         type: Number,
+      },
+      tier: {
+        type: String,
+        default: TierTypeAmount.Tier1
       },
       createdAt: {
         type: Date,

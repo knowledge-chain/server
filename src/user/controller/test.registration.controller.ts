@@ -29,7 +29,7 @@ export const userRequestForTestQuestionController = async (
           .json({ message: "please verify your profile" });
       }
 
-      if (!user.emailOtp.verified) {
+      if (!user.isEmailVerified) {
         return res
           .status(401)
           .json({ message: "please verify your profile" });
@@ -87,7 +87,7 @@ export const userRequestForTestQuestionController = async (
           .json({ message: "please verify your profile" });
       }
 
-      if (!user.emailOtp.verified) {
+      if (!user.isEmailVerified) {
         return res
           .status(401)
           .json({ message: "please verify your profile" });

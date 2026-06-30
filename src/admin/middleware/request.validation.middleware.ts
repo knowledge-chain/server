@@ -42,8 +42,38 @@ export const validateTestResultDetailParams = [
 
 export const validatChangeAmountParams = [
   body("amount").notEmpty().isNumeric(),
+  body("tier").notEmpty()
 ];
 
+export const validatAddCourseParams = [
+  body("title").notEmpty(),
+  body("description").notEmpty(),
+  body("isSubscrible").notEmpty().isBoolean(),
+];
+
+export const validatAddSectionParams = [
+  body("title").notEmpty(),
+  body("course").notEmpty(),
+];
+
+export const validatAddLessonParams = [
+  body("title").notEmpty(),
+  body("course").notEmpty(),
+  body("section").notEmpty(),
+  body("wordContent").notEmpty(),
+  body("duration").notEmpty(),
+];
+
+export const validatAddTier2PlanParams = [
+  body("name").notEmpty(),
+  body("monthlyPrice").notEmpty().isNumeric(),
+  body("discription").notEmpty(),
+];
+
+export const validatChangeTierPriceParams = [
+  body("tier").notEmpty(),
+  body("amount").notEmpty(),
+];
 
 
 
@@ -55,5 +85,10 @@ export const requestValidation = {
   validateMessageUsersParams,
   validateUserDetailParams,
   validateTestResultDetailParams,
-  validatChangeAmountParams
+  validatChangeAmountParams,
+  validatAddCourseParams,
+  validatAddSectionParams,
+  validatAddLessonParams,
+  validatAddTier2PlanParams,
+  validatChangeTierPriceParams
 }

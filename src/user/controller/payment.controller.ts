@@ -6,9 +6,10 @@ import UserTestModel from "../../database/models/userTest.model";
 import { PaystackService } from "../../utils/paystack/paystack.payment";
 import { TransactionStatus } from "../../database/interface/transaction.interface";
 import AmountModel from "../../database/models/amount.model";
-import { mint } from "../../BlockChain/mint";
+import { checkTierAccess, mint } from "../../BlockChain/contractFunctions";
 import axios from 'axios'
 import FormData from 'form-data'
+import { TierTypeAmount } from "../../database/interface/amount.interface";
 
 export const userGetAmountController = async (
     req: Request,
@@ -16,7 +17,8 @@ export const userGetAmountController = async (
   ) => {
   
   try {
-    const amount = await AmountModel.findOne()
+    const {tier} = req.params
+    const amount = await AmountModel.findOne({tier})
   
     res.json({
       amount,
@@ -38,10 +40,13 @@ export const userInitNairaPaymentController = async (
     try {
       const {
         walletAddress,
-        callback
+        callback,
+        tier
       } = req.body;
   
-      const user = await UserModel.findOne({ walletAddress: walletAddress.toString().toLowerCase() });
+      // const user = await UserModel.findOne({ walletAddress: walletAddress.toString().toLowerCase() });
+
+      const user = await UserModel.findOne({ walletAddress: walletAddress });
 
       if (!user) {
         return res
@@ -61,17 +66,48 @@ export const userInitNairaPaymentController = async (
       //     .json({ message: "You have paid Already" });
       // }
 
-       const prince = await AmountModel.findOne()
-       if (!prince) {
-         return res
+      let price
+
+      if (tier) {
+        const checkTier2Access = await checkTierAccess(user?.walletAddress!, tier)
+        
+        // if (checkTier2Access.checkAccess) {
+        //   return res.status(401).json({
+        //     success: false,
+        //     message: "You already mint this NFT",
+        //   });
+        // }
+
+        if (tier == 1) {
+          price = await AmountModel.findOne({tier: TierTypeAmount.Tier1})
+          if (!price) {
+            return res
+              .status(401)
+              .json({ message: "Price not set for this tier" });
+          }
+        }else if (tier == 2) {
+          price = await AmountModel.findOne({tier: TierTypeAmount.Tier2})
+          if (!price) {
+            return res
+              .status(401)
+              .json({ message: "Price not set for this tier" });
+          }
+        }else{
+          return res
+            .status(401)
+            .json({ message: "Price not set" });
+        }
+      }else{
+        return res
           .status(401)
           .json({ message: "Price not set" });
-       }
+      }
+
 
       const paystackService = new PaystackService();
 
       const callbackUrl = callback
-      const amount = prince.amount;
+      const amount = price.amount;
 
       const initPayment = await paystackService.initTransaction(user.userEmail, amount, user._id, callbackUrl)
 
@@ -84,6 +120,7 @@ export const userInitNairaPaymentController = async (
       const transaction = new TransactionModel({
         user: user._id,
         amount: amount,
+        tier: tier,
         status: TransactionStatus.Pending,
         reference: initPayment.data.reference
       });
@@ -126,7 +163,7 @@ export const userInitNairaPaymentController = async (
           .json({ message: "please verify your profile" });
       }
 
-      if (!user.emailOtp.verified) {
+      if (!user.isEmailVerified) {
         return res
           .status(401)
           .json({ message: "please verify your profile" });
@@ -155,7 +192,7 @@ export const userInitNairaPaymentController = async (
           .json({ message: verifyPayment.message });
       }
 
-      const mintNft = await mint(walletAddress, img)
+      const mintNft = await mint(walletAddress, img, checkTransaction.tier)
       if (!mintNft.status) {
         return res
           .status(401)
@@ -208,7 +245,7 @@ export const userInitNairaPaymentController = async (
           .json({ message: "please verify your profile" });
       }
 
-      if (!user.emailOtp.verified) {
+      if (!user.isEmailVerified) {
         return res
           .status(401)
           .json({ message: "please verify your profile" });
@@ -219,7 +256,6 @@ export const userInitNairaPaymentController = async (
           .status(401)
           .json({ message: "You have paid Already" });
       }
-
 
 
      await UserModel.findOneAndUpdate(

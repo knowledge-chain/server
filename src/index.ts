@@ -10,10 +10,13 @@ import rateLimit from "express-rate-limit";
 
 import userRoute from "./user/route/route";
 import adminRoute from "./admin/route/routes";
+import { Tier2SubscriptionBillingCron } from "./user/controller/tier2BillingCrorJob";
 
 dotenv.config(); // Load environment variables at the very beginning
 
 const app = express();
+
+Tier2SubscriptionBillingCron()
 
 const csrfProtection = csrf({ cookie: true });
 
@@ -101,7 +104,7 @@ app.use("/admin", adminRoute);
 
 
 // App initialized port
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 9000;
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);

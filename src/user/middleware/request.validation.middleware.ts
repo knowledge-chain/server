@@ -24,6 +24,21 @@ export const validateProfileParams = [
   body("phoneNumber").notEmpty(),
 ];
 
+export const validateSignupParams = [
+  body("email").isEmail(),
+  body("password").notEmpty(),
+];
+
+export const validateResendEmailParams = [
+  body("email").isEmail(),
+];
+
+export const validateResetPasswordEmailParams = [
+  body("email").isEmail(),
+  body("otp").notEmpty(),
+  body("password").notEmpty(),
+];
+
 export const validateVerifyEmailParams = [
   body("email").isEmail(),
   body("otp").notEmpty(),
@@ -36,22 +51,60 @@ export const validateCheckEmailParams = [
 export const validateInitPaymentParams = [
   body("walletAddress").notEmpty(),
   body("callback").notEmpty(),
+  body("tier").notEmpty(),
 ];
 
 export const validateVerifyPaymentParams = [
   body("walletAddress").notEmpty(),
   body("reference").notEmpty(),
-   body("img").notEmpty(),
+  body("img").notEmpty(),
+];
+
+export const validateCompletTier2LessontParams = [
+  body("courseId").notEmpty(),
+  body("lessonId").notEmpty(),
+];
+
+export const validateMintTier2CourseCertificateParams = [
+  body("courseId").notEmpty()
+];
+
+export const validateSubscribeTier2PlanParams = [
+  body("planId").notEmpty(),
+  body("callbackUrl").notEmpty(),
+];
+
+export const validateVerifyTier2PaymentParams = [
+  body("billingId").notEmpty(),
+  body("reference").notEmpty(),
+];
+
+export const validatePayTier2BillParams = [
+  body("billId").notEmpty(),
+  body("callbackUrl").notEmpty(),
+];
+
+export const validateEditProfileParams = [
+  body("name").notEmpty(),
 ];
 
 
 export const requestValidation = {
   validateFormData,
   validateCreateAccountParams,
+  validateSignupParams,
+  validateResendEmailParams,
+  validateResetPasswordEmailParams,
   validateCheckWalletParams,
   validateProfileParams,
   validateVerifyEmailParams,
   validateCheckEmailParams,
   validateInitPaymentParams,
-  validateVerifyPaymentParams
+  validateVerifyPaymentParams,
+  validateCompletTier2LessontParams,
+  validateSubscribeTier2PlanParams,
+  validateVerifyTier2PaymentParams,
+  validatePayTier2BillParams,
+  validateMintTier2CourseCertificateParams,
+  validateEditProfileParams
 }

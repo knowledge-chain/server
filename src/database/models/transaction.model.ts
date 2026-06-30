@@ -1,7 +1,7 @@
 import { Schema, model } from "mongoose";
 import { ITransaction, TransactionStatus } from "../interface/transaction.interface";
 
-const TransactionSchema = new Schema(
+const TransactionSchema: Schema<ITransaction> = new Schema(
     { 
       user: {
         type: Schema.Types.ObjectId, ref: 'User',
@@ -10,6 +10,9 @@ const TransactionSchema = new Schema(
       amount: {
         type: Number,
         required: true,
+      },
+      tier: {
+        type: Number,
       },
       status: {
         type: String,  

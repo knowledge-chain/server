@@ -3,51 +3,58 @@ import { Request, Response } from "express";
 import UserModel from "../../database/models/user.model";
 import { OTP_EXPIRY_TIME, generateOTP } from "../../utils/otpGenerator";
 import { sendUserAccountVerificationEmail } from "../../utils/send-email.util";
+import { UserAccountTypeEnum } from "../../database/interface/user.interface";
+import { generateUserToken } from "../../utils/jwt.util";
 
 
 export const userCreateAccountController = async (
   req: Request,
   res: Response,
 ) => {
-
   try {
     const {
       walletAddress,
     } = req.body;
 
-    const walletModify = walletAddress.toString().toLowerCase();
+    // const walletModify = (walletAddress as string).toLowerCase().trim();
 
-    const checkWallet = await UserModel.findOne({walletAddress: walletModify})
+    const checkWallet = await UserModel.findOne({walletAddress: walletAddress})
     if (checkWallet) {
+      const token = generateUserToken({ userId: checkWallet._id, walletAddress: checkWallet.walletAddress });
       res.json({
         status: true,
+        token,
         message: "wallet address captured successfully",
         user: {
           id: checkWallet._id,
           walletAddress: checkWallet.walletAddress,
+          userType: checkWallet.userType
         },
 
       });
     }else{
       const user = new UserModel({
-        walletAddress: walletModify
+        walletAddress: walletAddress,
+        userType: UserAccountTypeEnum.Web3
       });
 
       let userSaved = await user.save();
 
+      const token = generateUserToken({ userId: userSaved._id, walletAddress: userSaved.walletAddress });
+
       res.json({
         status: true,
         message: "wallet address captured successfully",
+        token,
         user: {
           id: userSaved._id,
           walletAddress: userSaved.walletAddress,
+          userType: userSaved.userType
         },
 
       });
     }
 
-    
-    
   } catch (err: any) {
     // signup error
     res.status(500).json({ message: err.message });
@@ -65,7 +72,8 @@ export const checkUserWalletAddressController = async (
       walletAddress,
     } = req.query;
   
-    const userWalletExists = await UserModel.findOne({ walletAddress: walletAddress!.toString().toLowerCase() });
+    // const userWalletExists = await UserModel.findOne({ walletAddress: walletAddress!.toString().toLowerCase() });
+     const userWalletExists = await UserModel.findOne({ walletAddress: walletAddress });
   
     if (userWalletExists) {
       res.json({
@@ -106,7 +114,7 @@ export const userProvideEmailController = async (
       phoneNumber
     } = req.body;
   
-    const userWalletExists = await UserModel.findOne({ walletAddress: walletAddress.toString().toLowerCase() });
+    const userWalletExists = await UserModel.findOne({ walletAddress: walletAddress });
   
     if (!userWalletExists) {
       return res
@@ -117,27 +125,28 @@ export const userProvideEmailController = async (
     const user = await UserModel.findOne({ userEmail: email });
 
     if (user) {
-      if (user.emailOtp.verified) {
+      if (user.isEmailVerified) {
         return res
             .status(401)
             .json({ message: "email already verified" });
       }else{
-        const otp = generateOTP()
-        const createdTime = new Date();
 
-        user!.emailOtp = {
-          otp,
-          createdTime,
-          verified : false
-  
-        }
+        const otp = parseInt(Math.floor(1000 + Math.random() * 9000).toString(),10,)
+
+        const emailVerificationCodeExpires = new Date()
+        emailVerificationCodeExpires.setMinutes(
+        emailVerificationCodeExpires.getMinutes() + 15,
+        )
+
+        user.emailVerificationCode = otp,
+        user.emailVerificationCodeExpires =emailVerificationCodeExpires
 
         await user?.save();
 
         let emailData = {
             emailTo: email,
             subject: "Knowledge Chain email verification",
-            otp,
+            otp: otp.toString(),
             firstName: user.name,
         };
 
@@ -147,25 +156,25 @@ export const userProvideEmailController = async (
       }
     }
 
-    const otp = generateOTP()
-    const createdTime = new Date();
+    const otp = parseInt(Math.floor(1000 + Math.random() * 9000).toString(),10,)
+
+    const emailVerificationCodeExpires = new Date()
+    emailVerificationCodeExpires.setMinutes(
+    emailVerificationCodeExpires.getMinutes() + 15,
+    )
 
     userWalletExists.name = name
     userWalletExists.userEmail = email
     userWalletExists.phoneNumber = phoneNumber
-
-    userWalletExists!.emailOtp = {
-      otp,
-      createdTime,
-      verified : false
-    }
+    userWalletExists.emailVerificationCode = otp,
+    userWalletExists.emailVerificationCodeExpires =emailVerificationCodeExpires
 
     await userWalletExists?.save();
 
     let emailData = {
         emailTo: email,
         subject: "Knowledge Chain email verification",
-        otp,
+        otp: otp.toString(),
         firstName: name,
     };
 
@@ -180,55 +189,55 @@ export const userProvideEmailController = async (
 }
 
 
-export const userVerifyEmailController = async (
-  req: Request,
-  res: Response,
-) => {
+// export const userVerifyEmailController = async (
+//   req: Request,
+//   res: Response,
+// ) => {
 
-  try {
-    const {
-      email,
-      otp
-    } = req.body;
+//   try {
+//     const {
+//       email,
+//       otp
+//     } = req.body;
   
-    const user = await UserModel.findOne({ userEmail: email });
+//     const user = await UserModel.findOne({ userEmail: email });
     
-    // check if user exists
-    if (!user) {
-     return res
-       .status(401)
-       .json({ message: "invalid email" });
-   }
+//     // check if user exists
+//     if (!user) {
+//      return res
+//        .status(401)
+//        .json({ message: "invalid email" });
+//    }
 
-   if (user.emailOtp.otp != otp) {
-       return res
-       .status(401)
-       .json({ message: "invalid otp" });
-   }
+//    if (user.emailOtp.otp != otp) {
+//        return res
+//        .status(401)
+//        .json({ message: "invalid otp" });
+//    }
 
-   if (user.emailOtp.verified) {
-       return res
-       .status(401)
-       .json({ message: "email already verified" });
-   }
+//    if (user.emailOtp.verified) {
+//        return res
+//        .status(401)
+//        .json({ message: "email already verified" });
+//    }
 
-   const timeDiff = new Date().getTime() - user.emailOtp.createdTime.getTime();
-   if (timeDiff > OTP_EXPIRY_TIME) {
-       return res.status(400).json({ message: "otp expired" });
-   }
+//    const timeDiff = new Date().getTime() - user.emailOtp.createdTime.getTime();
+//    if (timeDiff > OTP_EXPIRY_TIME) {
+//        return res.status(400).json({ message: "otp expired" });
+//    }
 
-   user.emailOtp.verified = true;
+//    user.emailOtp.verified = true;
 
-   await user.save();
+//    await user.save();
 
-   return res.json({ message: "email verified successfully" });
+//    return res.json({ message: "email verified successfully" });
     
-  } catch (err: any) {
-    // signup error
-    res.status(500).json({ message: err.message });
-  }
+//   } catch (err: any) {
+//     // signup error
+//     res.status(500).json({ message: err.message });
+//   }
 
-}
+// }
 
 
 export const checkUserEmailVerifiedController = async (
@@ -241,7 +250,7 @@ export const checkUserEmailVerifiedController = async (
       walletAddress,
     } = req.query;
   
-    const user = await UserModel.findOne({ walletAddress: walletAddress!.toString().toLowerCase() });
+    const user = await UserModel.findOne({ walletAddress: walletAddress });
  
     if (!user) {
      return res
@@ -255,7 +264,7 @@ export const checkUserEmailVerifiedController = async (
         .json({ message: "please verify your profile" });
     }
 
-   if (user.emailOtp.verified) {
+   if (user.isEmailVerified) {
     res.json({
       status: true,
       message: "email verified",
@@ -263,7 +272,7 @@ export const checkUserEmailVerifiedController = async (
         id: user._id,
         walletAddress: user.walletAddress,
         email: user.userEmail,
-        emailStatus: user.emailOtp.verified
+        emailStatus: user.isEmailVerified
       },
 
     });
@@ -275,7 +284,7 @@ export const checkUserEmailVerifiedController = async (
         id: user._id,
         walletAddress: user.walletAddress,
         email: user.userEmail,
-        emailStatus: user.emailOtp.verified
+        emailStatus: user.isEmailVerified
       },
 
     });

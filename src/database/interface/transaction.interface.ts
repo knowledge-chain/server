@@ -12,6 +12,7 @@ export interface ITransaction extends Document {
   _id: ObjectId;
   user:  IUser['_id'];
   amount:  number;
+  tier:  number;
   status: TransactionStatus;
   reference: string;
   createdAt: Date;
